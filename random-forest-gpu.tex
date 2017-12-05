@@ -6,7 +6,7 @@
 \usepackage{pseudocode}
 \usepackage{algorithmicx}
 \usepackage{algpseudocode}
-
+\usepackage{romannum}
 \title{A Parallel Implementation of Random Forest}
 \author{Lou Brand and Xun Li}
 \institute{\textbf{Department of Computer Science\\Colorado School of Mines}}
@@ -90,43 +90,123 @@
     Talk about data. Put in timing data.
 }
 
-\section{Implementation}
+\section{GPU Implementation}
 
 \frame{
-    \frametitle{Parallel Implementation Considerations}
+    \frametitle{Ideas \Romannum{1}}
+    
+      \center \Large{Atomic block partitioning}
+ %       \item Atomic interleaved partitioning
+  %      \item Atomic privatization
+   %     \item Coarse-grained embarrassing Parallelism 
+    
+}
+
+\frame{
+    \frametitle{GPU Implementation--atomic block} 
+    
+    a graph
+    
+}
+
+\frame{
+    \frametitle{Ideas \Romannum{2}}
+    
+      %\center Atomic block partitioning
+      \center  \Large{Atomic interleaved partitioning}
+  %      \item Atomic privatization
+   %     \item Coarse-grained embarrassing Parallelism 
+    
+}
+
+
+\frame{
+    \frametitle{GPU Implementation--atomic interleaved} 
+    
+    a graph
+
+    
+    atomic throughput
+}
+
+\frame{
+    \frametitle{Ideas \Romannum{3}}
+    
+      %\center Atomic block partitioning
+      %\center  Atomic interleaved partitioning
+        \center  \Large{privatization}
+   %     \item Coarse-grained embarrassing Parallelism 
+    
+}
+
+
+\frame{
+    \frametitle{GPU Implementation--privatization} 
+    
+    a graph
+    
+}
+
+\frame{
+    \frametitle{Ideas \Romannum{4}}
+    
+      %\center Atomic block partitioning
+      %\center  Atomic interleaved partitioning
+        %\center  privatization
+        \center \Large{Coarse-grained embarrassing Parallelism} 
+    
+}
+
+
+\frame{
+    \frametitle{GPU Implementation--Coarse-grain} 
+    
+    a graph
+    
+    utilization:
+}
+\section{Insights}
+
+\frame{
+    \frametitle{choice of backend}
     \begin{itemize}[<+->]
-        \item Block Interleaving - Partition for atomic, Doesn't make sense 
-        \item Atomic vs. Shared Memory
-        \item Coarse vs. Fine Grained Parallelism 
+    	\item CPU serial: small dataset
+        \item CPU parallel (OpenMP):
+        \item GPU privation: 
+        \item GPU coarse-grain:
     \end{itemize}
-}
-
-\frame{
-    \frametitle{GPU Implementation} 
-
-}
-
-\section{Conclusions}
-
-\frame{
-    \frametitle{Future Work}
-    \begin{itemize}[<-+>]
-        \item Algorithm improvements on redundancy
-        \item The first node split can be precomputed -- EXPLAIN
-        \item Task list/pool node merge -- EXPLAIN w/ a PICTURE
-    \end{itemize}
-}
-
-\frame{
-    \frametitle{CPU/GPU Heterogeneous Implementation}
-    \begin{itemize}[<+->]
+    \pause
+     \begin{itemize}[<+->]
         \item GPU computation works well early on in the tree (when there are many instances to be bagged)
         \item Further down the tree the CPU implementation works best
     \end{itemize}
-    \pause
-    Can we automatically determine when to switch between the CPU and GPU implementations depending on the size of parent node being split?
-    This is similar to the CPU/GPU pipe-lining approach we read about.
+    
+    Suggest random forest with clever backend choice in node splitting
 }
+
+\frame{
+    \frametitle{Reuse \& Share in gcForest}
+    \begin{itemize}
+    	\item Algorithm improvements on redundancy
+        \item The first node split can be precomputed and stored
+        \item Task pool for node merge 
+    \end{itemize}
+
+}
+
+
+
+
+\frame{
+    \frametitle{Conclusions}
+    \begin{itemize}
+    	\item Four implementations of node splitting
+        \item Understanding of performance bottleneck
+        \item Insights into random forest optimizations 
+    \end{itemize}
+
+}
+
 
 \frame{
     \begin{center}
