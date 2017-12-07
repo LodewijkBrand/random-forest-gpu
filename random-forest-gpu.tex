@@ -5,10 +5,13 @@
 \usepackage{xcolor}
 \usepackage{pseudocode}
 \usepackage{romannum}
+\setbeamertemplate {footline}{\Large{\quad\hfill\insertframenumber\strut\quad}}
+\usepackage{algorithm2e}
+\renewcommand{\thealgocf}{}
 
-\title{A Parallel Implementation of Random Forest}
+\title{Parallelism Insights into the Random Forest Algorithm}
 \author{Lou Brand and Xun Li}
-\institute{\textbf{Department of Computer Science\\Colorado School of Mines}}
+\institute{\textbf{Advanced High Performance Computing\\Colorado School of Mines}}
 \date{\today}
 
 \begin{document}
@@ -22,17 +25,18 @@
 }
 
 \frame{
-    \frametitle{gcForest}
-    \begin{center}
-        \includegraphics[scale=0.3]{images/gcForest.png}\\
-        ``The efficiency of gcForest can be improved further with optimized parallel implementation'' - \textit{Zhou et. al.}
-    \end{center}
-}
-\frame{
     \frametitle{Applications}
     \begin{center}
         \includegraphics[scale=0.75]{images/cifar1.jpg}\\ 
         Face perception, image tagging, regression, classification, etc.
+    \end{center}
+}
+
+\frame{
+    \frametitle{Towards an Alternative to Deep Neural Networks: gcForest}
+    \begin{center}
+        \includegraphics[scale=0.3]{images/gcForest.png}\\
+        ``The efficiency of gcForest can be improved further with optimized parallel implementation'' - \textit{Zhou et.al.}
     \end{center}
 }
 
@@ -68,7 +72,7 @@
             $$ IG_{feature}=GI_P-\frac{N_L}{N}GI_L-\frac{N_R}{N}GI_R $$
         where,
             $$ GI=1- \sum_{j=0}^{M}(\frac{C_j}{W})^2 $$
-        $W$ samples in parent node, $C_j$ number of samples w/ label $j$
+        $W$ samples in node, $C_j$ number of samples w/ label $j$
         \item Repeat 1-3 for additional features
         \item Splitting feature $= argmax(IG_{feature})$
     \end{enumerate}
@@ -85,12 +89,12 @@
         \item Labels: 32 classes
     \end{enumerate}
     \pause
-    \textbf{Environment} Intel Xeon ES-2670
+    \textbf{Environment, AWS} Intel Xeon ES-2670
     \begin{enumerate}
         \item 8x hyper-threads (4 cores)
     \end{enumerate}
     \pause
-    \textbf{Environment} NVIDIA GRID GPU (Kepler GK104)
+    \textbf{Environment, AWS} NVIDIA GRID GPU (Kepler GK104)
     \begin{enumerate}
         \item Memory: 2 GB
         \item Memory bandwidth: 224.3 GB/sec
@@ -100,54 +104,37 @@
 \frame{
     \frametitle{CPU Baseline}
     \begin{center}
-        \Large{\textbf{Serial:} 94970 ms\\ \textbf{OpenMP:} 16773 ms}
+        \Large{\textbf{Serial Runtime:} 94.97 secs\\ \textbf{OpenMP Runtime:} 16.77 secs}
     \end{center}
 }
 
+\setbeamercovered{invisible}
 \frame{
     \frametitle{GPU Implementation--Atomic Block}
     \begin{center}
-        \includegraphics[scale=.12]{images/parallel-histogram.jpg}
-    \end{center}
-}
-
-\frame{
-    \frametitle{GPU Implementation--Atomic Block} 
-    \begin{center}
-        \Large{\textbf{Atomic Block:} 43422 ms\\ \textbf{Atomic Throughput:} 4.06 GB/sec (on GT 750M) out of 80 GB/sec}
+        \includegraphics[scale=.12]{images/parallel-histogram.jpg}\\
+        \onslide<2->{\Large{\textbf{Runtime:} 43.42 sec\\ \textbf{Atomic Throughput:} 4.06 GB/sec$^*$}\\ \vspace{.5cm}\small{$^*$(on GT 750M) out of 80 GB/sec}}
     \end{center}
 }
 
 \frame{
     \frametitle{GPU Implementation--Atomic Interleaved}
     \begin{center}
-        \includegraphics[scale=.13]{images/interleaved.jpg}
-    \end{center}
-}
-
-\frame{
-    \frametitle{GPU Implementation--Atomic Interleaved}
-    \begin{center}
-        \Large{\textbf{Atomic Interleaved:} 8573 ms\\ \textbf{Atomic Throughput:} 18.6 GB/sec (on GT 750M) out of 80 GB/sec}
+        \includegraphics[scale=.13]{images/interleaved.jpg}\\
+        \onslide<2->{\Large{\textbf{Runtime:} 8.57 sec\\ \textbf{Atomic Throughput:} 18.6 GB/sec$^*$}\\ \vspace{.5cm}\small{$^*$(on GT 750M) out of 80 GB/sec}}
     \end{center}
 }
 
 \frame{
     \frametitle{GPU Implementation--Atomic Privatization}
     \begin{center}
-        \includegraphics[scale=.45]{images/privitization-code.png}
+        \vspace{-.9cm}\includegraphics[scale=.45]{images/privitization-code.png}\\
+        \onslide<2->{\Large{\textbf{Runtime:} 5.29 sec, \textbf{Atomic Thrpt:} 1.07 GB/sec$^*$}\\ \vspace{.3cm}\small{$^*$(on GT 750M) out of 80 GB/sec}}
     \end{center}
 } 
 
 \frame{
-    \frametitle{GPU Implementation--Atomic Privatization}
-    \begin{center}
-        \Large{\textbf{Atomic Privatization:} 5288 ms\\ \textbf{Atomic Throughput:} 1.07 GB/sec (on GT 750M) out of 80 GB/sec}
-    \end{center}
-}
-
-\frame{
-    \frametitle{GPU Implementation--Coarse-Grained Parallelism}
+    \frametitle{GPU Implementation--Coarse-Grain Parallelism}
     \begin{pseudocode}{SplittingNode}{label,feature,S} 
         1\color{red}{\quad \FOR k \GETS 0 \TO max(S)}\\
     2\quad	 \quad \FOR i \GETS 0 \TO N \\
@@ -158,19 +145,14 @@
     7\quad \quad split \GETS S[argmax(IG)]\\
     8\quad \RETURN{split, child}
     \end{pseudocode}
-}
-
-
-\frame{
-    \frametitle{GPU Implementation--Coarse-Grain Parallelism} 
     \begin{center}
-        \Large{\textbf{Coarse-Grain:} 5226 ms}
+        \onslide<2->{\Large{\textbf{Runtime:} 5.23 sec}}
     \end{center}
-
 }
 
 \section{Insights}
 
+\setbeamercovered{transparent}
 \frame{
     \frametitle{What Should We Choose?}
     \textbf{Some Intuition}
@@ -178,7 +160,7 @@
         \item GPU computation works well early on in the tree (when there are many instances to be bagged)
         \item Further down the tree the CPU implementation works best
     \end{itemize}
-    \textbf{What to Choose}
+    \onslide<+->{\textbf{What to Choose}}
     \begin{itemize}[<+->]
     	\item CPU Serial: ``Smaller'' Datasets
         \item CPU Parallel (OpenMP): ``Small'' Datasets
@@ -194,6 +176,11 @@
         \item The first node split can be precomputed and stored
         \item Pooling some tasks via node merge, helps with load balance issues 
         \item Pipe-lining with CPU and GPU
+    \end{enumerate}
+    \onslide<+->{\textbf{Parameter Tuning for Further Insight}}
+    \begin{enumerate}[<+->]
+        \item Sample size
+        \item Threads in block
     \end{enumerate}
 }
 
